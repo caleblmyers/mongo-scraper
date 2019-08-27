@@ -1,9 +1,137 @@
-<h1>Results Page</h1>
+<nav class="navbar navbar-dark text-white bg-dark mb-5 py-4 shadow">
+  <a class="navbar-brand ml-3" href="#">MTV News</a>
+  <div class="ml-4 mr-auto">
+    <button type="button" class="btn btn-primary" id="scrape">Scrape</button>
+    <button type="button" class="btn btn-warning ml-4" id="clear">Clear</button>
+  </div>
+</nav>
 
-<div>
-  {{#each articles}}
-  <h4>{{title}}</h4>
-  <p>{{summary}}</p>
-  <a>{{link}}</a>
-  {{/each}}
+<div class="container text-white bg-dark mb-5 pb-5 border border-dark rounded shadow">
+  <div class="display-4 text-center py-4">Results</div>
+
+  <div class="row justify-content-center" id="article-row">
+    {{#each articles}}
+    <div class="card bg-secondary col-10 col-md-6 col-lg-4 m-2 shadow">
+      <div class="card-header bg-secondary">
+        <div class="card-title pt-2 h4">{{title}}</div>
+      </div>
+      <div class="card-body">
+        <p class="card-text lead pb-2">{{summary}}</p>
+        <a href="{{link}}" class="btn btn-success">Go to Article</a>
+        <button type="button" class="btn btn-success btn-comment" data-toggle="modal" data-target="#commentModal"
+          data-id="{{_id}}">Comment</button>
+      </div>
+    </div>
+    {{else}}
+    <div class="card bg-secondary col-10 col-md-6 col-lg-4 m-2 shadow">
+      <div class="card-header bg-secondary">
+        <div class="card-title pt-2 h4">There's nothing here!</div>
+      </div>
+      <div class="card-body">
+        <p class="card-text lead pb-2">Press the "Scrape" button to get the news!</p>
+      </div>
+    </div>
+    {{/each}}
+  </div>
 </div>
+
+<div class="modal fade shadow text-white" id="commentModal" tabindex="-1" role="dialog"
+  aria-labelledby="commentModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"></h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <h4>Comment Board: </h4>
+        <div class="py-2" id="comments"></div>
+        <form class="mt-4">
+          <div class="form-group">
+            <h4 class="mb-2">Leave a new comment: </h4>
+            <label for="post-title">Title</label>
+            <input type="text" class="form-control" id="post-title">
+          </div>
+          <div class="form-group">
+            <label for="post-body">Comment</label>
+            <input type="text" class="form-control" id="post-body">
+          </div>
+          <button type="submit" class="btn btn-success" id="post-comment">Submit</button>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  $(function () {
+    $(document).on("click", ".btn-comment", function () {
+      var id = $(this).attr("data-id");
+
+      $.ajax({
+        method: "GET",
+        url: "/articles/" + id
+      })
+        .then(function (data) {
+          $(".modal-title").text(data.title);
+          $("#comments").empty()
+          $("#post-comment").attr("data-id", data._id)
+
+          if (data.comments.length > 0) {
+            data.comments.forEach(function (comment) {
+              var newComment = $("<div>");
+
+              newComment.append("<h5>" + comment.title + "</h5>");
+              newComment.append("<p>" + comment.body + "</p>");
+              $(newComment).addClass("comment-border shadow p-2 my-2")
+              $("#comments").append(newComment);
+            })
+          } else {
+            $("#comments").append("<h5 class='comment-border shadow p-2 my-2'>No comments yet!</h5>")
+          }
+        })
+    })
+
+    $(document).on("click", "#post-comment", function () {
+      var id = $(this).attr("data-id")
+
+      $.ajax({
+        method: "POST",
+        url: "/articles/" + id,
+        data: {
+          title: $("#post-title").val().trim(),
+          body: $("#post-body").val().trim()
+        }
+      })
+        .then(function (data) {
+          $("#post-title").val("")
+          $("#post-body").val("")
+        })
+    })
+
+    $("#scrape").on("click", function () {
+      $.ajax({
+        method: "GET",
+        url: "/scrape"
+      })
+        .then(function (data) {
+          window.location.reload()
+        })
+    })
+
+    $("#clear").on("click", function () {
+      $.ajax({
+        method: "GET",
+        url: "/clear"
+      })
+        .then(function (data) {
+          window.location.reload()
+        })
+    })
+  })
+</script>
